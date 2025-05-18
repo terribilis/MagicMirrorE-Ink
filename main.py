@@ -22,8 +22,8 @@ import PIL.ImageOps
 from utils.epd13in3b import EPD
 
 # Global config
-display_width = 800		# Width of the display
-display_height = 480		# Height of the display
+display_width = 960		# Width of the display
+display_height = 680		# Height of the display
 is_portrait = False		# True of the display should be in landscape mode (make sure to adjust the width and height accordingly)
 is_topdown = True
 wait_to_load = 60		# Page load timeout
@@ -110,6 +110,12 @@ async def refresh():
         logging.debug('Opening screenshot.')
         # image = Image.open(tmp_file)
         image = Image.open('screenshot.png')
+        
+        # Resize image to match display dimensions if needed
+        if image.size != (display_width, display_height):
+            logging.debug(f'Resizing image from {image.size} to ({display_width}, {display_height})')
+            image = image.resize((display_width, display_height), Image.Resampling.LANCZOS)
+        
         # Replace all colors with are neither black nor red with white
         image = remove_aliasing_artefacts(image)
         image = PIL.ImageOps.invert(image)
@@ -120,12 +126,12 @@ async def refresh():
         if is_topdown:
            logging.debug('Rotating image (topdown mode).')
            image = image.rotate(180)
+        
         # Split the image into black and red components
         black_image = Image.new('1', image.size, 255)
         red_image = Image.new('1', image.size, 255)
         
         # Convert to RGB if not already
-        # rgb_image = image.convert('RGB')
         data = np.array(image)
         
         # Create masks for black and red
@@ -140,6 +146,7 @@ async def refresh():
         
         black_image = Image.fromarray(black_data)
         red_image = Image.fromarray(red_data)
+        
         logging.debug('Sending image to screen.')
         epd.display(epd.getbuffer(black_image), epd.getbuffer(red_image))
     logging.debug('Sending display back to sleep.')
