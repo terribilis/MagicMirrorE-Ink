@@ -6,7 +6,7 @@ import argparse
 import sys
 import numpy as np
 # from aiocron import crontab
-from playwright.async_api import async_playwright
+from pyppeteer import launch
 from PIL import Image
 import PIL.ImageOps
 
@@ -45,15 +45,40 @@ async def create_screenshot(file_path):
     global wait_after_load
     global url
     logging.debug('Creating screenshot')
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
-        await page.set_viewport_size({"width": display_width, "height": display_height})
-        await page.goto(url, timeout=wait_to_load * 1000)
-        await page.wait_for_timeout(wait_after_load * 1000)
-        await page.screenshot(path=file_path)
+    try:
+        browser = await launch({
+            'headless': True,
+            'executablePath': '/usr/bin/chromium-browser',
+            'args': [
+                '--no-sandbox',
+                '--disable-gpu',
+                '--disable-dev-shm-usage',
+                '--single-process',
+                '--disable-setuid-sandbox'
+            ]
+        })
+        page = await browser.newPage()
+        await page.setViewport({
+            "width": display_width,
+            "height": display_height
+        })
+        
+        # Increase the default timeout for navigation
+        await page.goto(url, timeout=wait_to_load * 1000, waitUntil='networkidle0')
+        
+        # Wait for any remaining network activity to settle
+        await page.waitFor(wait_after_load * 1000)
+        
+        # Take screenshot with increased timeout
+        await page.screenshot({'path': file_path, 'timeout': 60000})  # 60 second timeout for screenshot
+        
         await browser.close()
-    logging.debug('Finished creating screenshot')
+        logging.debug('Finished creating screenshot')
+    except Exception as e:
+        logging.error(f'Error creating screenshot: {str(e)}')
+        if 'browser' in locals():
+            await browser.close()
+        raise
 
 
 def remove_aliasing_artefacts(image):
@@ -81,9 +106,10 @@ async def refresh():
     epd.init()
     with tempfile.NamedTemporaryFile(suffix='.png') as tmp_file:
         logging.debug(f'Created temporary file at {tmp_file.name}.')
-        await create_screenshot(tmp_file.name)
+        # await create_screenshot(tmp_file.name)
         logging.debug('Opening screenshot.')
-        image = Image.open(tmp_file)
+        # image = Image.open(tmp_file)
+        image = Image.open('screenshot.png')
         # Replace all colors with are neither black nor red with white
         image = remove_aliasing_artefacts(image)
         image = PIL.ImageOps.invert(image)
