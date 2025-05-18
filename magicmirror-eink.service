@@ -1,0 +1,11 @@
+[Unit]
+Description=MagicMirror EInk
+
+[Service]
+WorkingDirectory=/home/pi/MagicMirrorE-Ink/
+ExecStart=/home/pi/MagicMirrorE-Ink/run.sh
+Restart=on-failure
+User=pi
+
+[Install]
+WantedBy=multi-user.target

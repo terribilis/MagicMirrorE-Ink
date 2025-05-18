@@ -1,0 +1,8 @@
+{
+    "update_interval": 600,
+    "font_size": 40,
+    "show_book_info": true,
+    "show_author": true,
+    "content_filter": "all",
+    "display_brightness": 100
+}
