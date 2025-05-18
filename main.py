@@ -17,7 +17,7 @@ import PIL.ImageOps
 # Import the waveshare folder (containing the waveshare display drivers) without refactoring it to a module
 # TODO maybe switch to a git submodule here and upgrade to the latest version:
 # https://github.com/waveshare/e-Paper/blob/master/RaspberryPi%26JetsonNano/python/lib/waveshare_epd/epd7in5_V2c.py
-sys.path.insert(0, './waveshare')
+# sys.path.insert(0, './waveshare')
 # import epd7in5_V2
 from utils.epd13in3b import EPD
 
@@ -120,14 +120,13 @@ async def refresh():
         if is_topdown:
            logging.debug('Rotating image (topdown mode).')
            image = image.rotate(180)
-        
         # Split the image into black and red components
         black_image = Image.new('1', image.size, 255)
         red_image = Image.new('1', image.size, 255)
         
         # Convert to RGB if not already
-        rgb_image = image.convert('RGB')
-        data = np.array(rgb_image)
+        # rgb_image = image.convert('RGB')
+        data = np.array(image)
         
         # Create masks for black and red
         black_mask = np.all(data == [0, 0, 0], axis=2)
@@ -141,7 +140,6 @@ async def refresh():
         
         black_image = Image.fromarray(black_data)
         red_image = Image.fromarray(red_data)
-        
         logging.debug('Sending image to screen.')
         epd.display(epd.getbuffer(black_image), epd.getbuffer(red_image))
     logging.debug('Sending display back to sleep.')
