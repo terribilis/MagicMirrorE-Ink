@@ -94,9 +94,30 @@ async def refresh():
         if is_topdown:
            logging.debug('Rotating image (topdown mode).')
            image = image.rotate(180)
+        
+        # Split the image into black and red components
+        black_image = Image.new('1', image.size, 255)
+        red_image = Image.new('1', image.size, 255)
+        
+        # Convert to RGB if not already
+        rgb_image = image.convert('RGB')
+        data = np.array(rgb_image)
+        
+        # Create masks for black and red
+        black_mask = np.all(data == [0, 0, 0], axis=2)
+        red_mask = np.all(data == [255, 0, 0], axis=2)
+        
+        # Apply masks to create black and red images
+        black_data = np.array(black_image)
+        red_data = np.array(red_image)
+        black_data[black_mask] = 0
+        red_data[red_mask] = 0
+        
+        black_image = Image.fromarray(black_data)
+        red_image = Image.fromarray(red_data)
+        
         logging.debug('Sending image to screen.')
-        # epd.display_frame(epd.get_frame_buffer(image))
-        epd.display(epd.getbuffer(image))
+        epd.display(epd.getbuffer(black_image), epd.getbuffer(red_image))
     logging.debug('Sending display back to sleep.')
     epd.sleep()
     logging.info('Refresh finished.')
