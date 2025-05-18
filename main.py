@@ -6,7 +6,7 @@ import argparse
 import sys
 import numpy as np
 # from aiocron import crontab
-from pyppeteer import launch
+from playwright.async_api import async_playwright
 from PIL import Image
 import PIL.ImageOps
 
@@ -45,16 +45,14 @@ async def create_screenshot(file_path):
     global wait_after_load
     global url
     logging.debug('Creating screenshot')
-    browser = await launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox', '--headless', '--disable-gpu', '--disable-dev-shm-usage'], executablePath='/usr/bin/chromium-browser')
-    page = await browser.newPage()
-    await page.setViewport({
-        "width": display_width,
-        "height": display_height
-    })
-    await page.goto(url, timeout=wait_to_load * 1000)
-    await page.waitFor(wait_after_load * 1000);
-    await page.screenshot({'path': file_path})
-    await browser.close()
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        await page.set_viewport_size({"width": display_width, "height": display_height})
+        await page.goto(url, timeout=wait_to_load * 1000)
+        await page.wait_for_timeout(wait_after_load * 1000)
+        await page.screenshot(path=file_path)
+        await browser.close()
     logging.debug('Finished creating screenshot')
 
 
