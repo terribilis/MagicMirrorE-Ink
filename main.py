@@ -26,9 +26,9 @@ from utils.epd13in3b import EPD
 display_width = 960		# Width of the display
 display_height = 680		# Height of the display
 is_portrait = False		# True of the display should be in landscape mode (make sure to adjust the width and height accordingly)
-is_topdown = True
+is_topdown = False
 wait_to_load = 90		# Page load timeout
-wait_after_load = 30		# Time to evaluate the JS afte the page load (f.e. to lazy-load the calendar data) default=18
+wait_after_load = 60		# Time to evaluate the JS afte the page load (f.e. to lazy-load the calendar data) default=18
 url = 'http://localhost:8080'	# URL to create the screenshot of
 
 def reset_screen():
@@ -170,7 +170,7 @@ async def refresh():
         
         # Replace all colors with are neither black nor red with white
         image = remove_aliasing_artefacts(image)
-        # image = PIL.ImageOps.invert(image)
+        image = PIL.ImageOps.invert(image)
         # Rotate the image by 90°
         if is_portrait:
            logging.debug('Rotating image (portrait mode).')
