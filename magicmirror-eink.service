@@ -2,8 +2,8 @@
 Description=MagicMirror EInk
 
 [Service]
-WorkingDirectory=/home/pi/MagicMirrorE-Ink/
-ExecStart=/home/pi/MagicMirrorE-Ink/run.sh
+WorkingDirectory=/home/tkanell/repos/MagicMirrorE-Ink/
+ExecStart=/home/tkanell/repos/MagicMirrorE-Ink/run.sh
 Restart=on-failure
 User=pi
 
