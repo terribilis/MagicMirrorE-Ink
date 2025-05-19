@@ -62,59 +62,46 @@ async def create_screenshot(file_path):
     
     browser = None
     try:
-        # More robust browser launch configuration
+        # Simplified browser launch configuration for low-resource environments
         browser = await launch({
             'headless': True,
             'executablePath': '/usr/bin/chromium-browser',
             'args': [
                 '--no-sandbox',
-                '--disable-gpu',
                 '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-software-rasterizer',
+                '--disable-extensions',
+                '--disable-sync',
+                '--no-first-run',
+                '--no-zygote',
                 '--single-process',
                 '--disable-setuid-sandbox',
-                '--no-zygote',
-                '--no-first-run',
-                '--no-default-browser-check',
-                '--disable-background-networking',
-                '--disable-background-timer-throttling',
-                '--disable-client-side-phishing-detection',
-                '--disable-sync',
-                '--metrics-recording-only',
-                '--mute-audio',
-                '--disable-extensions',
-                '--hide-scrollbars',
-                '--disable-software-rasterizer',
                 '--disable-features=site-per-process',
-                '--disable-web-security',
-                '--disable-features=IsolateOrigins,site-per-process',
-                '--disable-site-isolation-trials',
-                '--disable-gpu-compositing',
-                '--disable-gpu-rasterization',
-                '--disable-gpu-sandbox',
-                '--disable-software-rasterizer',
-                '--disable-gl-drawing-for-tests',
+                '--js-flags="--max-old-space-size=256"',  # Limit JavaScript heap size
+                '--disable-dev-shm-usage',
                 '--disable-accelerated-2d-canvas',
-                '--disable-accelerated-mjpeg-decode',
-                '--disable-accelerated-video-decode',
-                '--disable-accelerated-video',
-                '--disable-accelerated-compositing'
+                '--disable-gpu-compositing'
             ],
             'ignoreHTTPSErrors': True,
             'handleSIGINT': False,
             'handleSIGTERM': False,
             'handleSIGHUP': False,
-            'dumpio': True  # This will help us see browser console output
+            'dumpio': True
         })
 
         page = await browser.newPage()
+        
+        # Set a smaller viewport to reduce memory usage
         await page.setViewport({
             "width": display_width,
-            "height": display_height
+            "height": display_height,
+            "deviceScaleFactor": 1
         })
         
-        # Increase the default timeout for navigation
+        # Set a shorter timeout for navigation
         try:
-            await page.goto(url, timeout=wait_to_load * 1000, waitUntil='networkidle0')
+            await page.goto(url, timeout=wait_to_load * 1000, waitUntil='domcontentloaded')
         except Exception as e:
             logging.error(f"Navigation failed: {str(e)}")
             if browser:
@@ -122,10 +109,17 @@ async def create_screenshot(file_path):
             raise Exception(f"Failed to load {url}. Please check if the server is running and accessible.")
         
         # Wait for any remaining network activity to settle
-        await page.waitFor(wait_after_load * 1000)
+        try:
+            await page.waitFor(wait_after_load * 1000)
+        except Exception as e:
+            logging.warning(f"Wait after load failed: {str(e)}")
         
         # Take screenshot with increased timeout
-        await page.screenshot({'path': file_path, 'timeout': 60000})  # 60 second timeout for screenshot
+        try:
+            await page.screenshot({'path': file_path, 'timeout': 30000})  # 30 second timeout for screenshot
+        except Exception as e:
+            logging.error(f"Screenshot failed: {str(e)}")
+            raise
         
         await browser.close()
         logging.debug('Finished creating screenshot')
