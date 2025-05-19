@@ -54,9 +54,21 @@ async def create_screenshot(file_path):
                 '--disable-gpu',
                 '--disable-dev-shm-usage',
                 '--single-process',
-                '--disable-setuid-sandbox'
+                '--disable-setuid-sandbox',
+                '--no-zygote',
+                '--no-first-run',
+                '--no-default-browser-check',
+                '--disable-background-networking',
+                '--disable-background-timer-throttling',
+                '--disable-client-side-phishing-detection',
+                '--disable-sync',
+                '--metrics-recording-only',
+                '--mute-audio',
+                '--disable-extensions',
+                '--hide-scrollbars'
             ]
         })
+
         page = await browser.newPage()
         await page.setViewport({
             "width": display_width,
