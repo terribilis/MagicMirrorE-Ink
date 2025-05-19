@@ -106,10 +106,10 @@ async def refresh():
     epd.init()
     with tempfile.NamedTemporaryFile(suffix='.png') as tmp_file:
         logging.debug(f'Created temporary file at {tmp_file.name}.')
-        # await create_screenshot(tmp_file.name)
+        await create_screenshot(tmp_file.name)
         logging.debug('Opening screenshot.')
-        # image = Image.open(tmp_file)
-        image = Image.open('screenshot.png')
+        image = Image.open(tmp_file)
+        # image = Image.open('screenshot.png')
         
         # Resize image to match display dimensions if needed
         if image.size != (display_width, display_height):
