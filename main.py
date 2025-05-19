@@ -5,6 +5,7 @@ import tempfile
 import argparse
 import sys
 import numpy as np
+import aiohttp
 # from aiocron import crontab
 from pyppeteer import launch
 from PIL import Image
@@ -38,6 +39,15 @@ def reset_screen():
     epd.display(epd.getbuffer(Limage))
 
 
+async def check_server_availability():
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=5) as response:
+                return response.status == 200
+    except Exception as e:
+        logging.error(f"Server not available: {str(e)}")
+        return False
+
 async def create_screenshot(file_path):
     global display_width
     global display_height
@@ -45,7 +55,14 @@ async def create_screenshot(file_path):
     global wait_after_load
     global url
     logging.debug('Creating screenshot')
+    
+    # Check if server is available first
+    if not await check_server_availability():
+        raise Exception(f"MagicMirror server is not available at {url}. Please make sure it's running.")
+    
+    browser = None
     try:
+        # More robust browser launch configuration
         browser = await launch({
             'headless': True,
             'executablePath': '/usr/bin/chromium-browser',
@@ -65,8 +82,18 @@ async def create_screenshot(file_path):
                 '--metrics-recording-only',
                 '--mute-audio',
                 '--disable-extensions',
-                '--hide-scrollbars'
-            ]
+                '--hide-scrollbars',
+                '--disable-software-rasterizer',
+                '--disable-features=site-per-process',
+                '--disable-web-security',
+                '--disable-features=IsolateOrigins,site-per-process',
+                '--disable-site-isolation-trials'
+            ],
+            'ignoreHTTPSErrors': True,
+            'handleSIGINT': False,
+            'handleSIGTERM': False,
+            'handleSIGHUP': False,
+            'dumpio': True  # This will help us see browser console output
         })
 
         page = await browser.newPage()
@@ -76,7 +103,13 @@ async def create_screenshot(file_path):
         })
         
         # Increase the default timeout for navigation
-        await page.goto(url, timeout=wait_to_load * 1000, waitUntil='networkidle0')
+        try:
+            await page.goto(url, timeout=wait_to_load * 1000, waitUntil='networkidle0')
+        except Exception as e:
+            logging.error(f"Navigation failed: {str(e)}")
+            if browser:
+                await browser.close()
+            raise Exception(f"Failed to load {url}. Please check if the server is running and accessible.")
         
         # Wait for any remaining network activity to settle
         await page.waitFor(wait_after_load * 1000)
@@ -88,8 +121,11 @@ async def create_screenshot(file_path):
         logging.debug('Finished creating screenshot')
     except Exception as e:
         logging.error(f'Error creating screenshot: {str(e)}')
-        if 'browser' in locals():
-            await browser.close()
+        if browser:
+            try:
+                await browser.close()
+            except:
+                pass
         raise
 
 
