@@ -87,7 +87,17 @@ async def create_screenshot(file_path):
                 '--disable-features=site-per-process',
                 '--disable-web-security',
                 '--disable-features=IsolateOrigins,site-per-process',
-                '--disable-site-isolation-trials'
+                '--disable-site-isolation-trials',
+                '--disable-gpu-compositing',
+                '--disable-gpu-rasterization',
+                '--disable-gpu-sandbox',
+                '--disable-software-rasterizer',
+                '--disable-gl-drawing-for-tests',
+                '--disable-accelerated-2d-canvas',
+                '--disable-accelerated-mjpeg-decode',
+                '--disable-accelerated-video-decode',
+                '--disable-accelerated-video',
+                '--disable-accelerated-compositing'
             ],
             'ignoreHTTPSErrors': True,
             'handleSIGINT': False,
