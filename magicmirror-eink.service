@@ -1,11 +1,16 @@
 [Unit]
 Description=MagicMirror EInk
+After=network.target
 
 [Service]
-WorkingDirectory=/home/tkanell/repos/MagicMirrorE-Ink/
+Type=simple
+User=tkanell
+Group=tkanell
+WorkingDirectory=/home/tkanell/repos/MagicMirrorE-Ink
 ExecStart=/home/tkanell/repos/MagicMirrorE-Ink/run.sh
 Restart=on-failure
-User=pi
+RestartSec=10
+Environment=PATH=/home/tkanell/repos/MagicMirrorE-Ink/.venv/bin:/usr/local/bin:/usr/bin:/bin
 
 [Install]
 WantedBy=multi-user.target
