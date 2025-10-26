@@ -1,0 +1,11 @@
+[Unit]
+Description=MagicMirror EInk Timer
+Requires=magicmirror-eink.service
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
