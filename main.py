@@ -6,7 +6,7 @@ import argparse
 import sys
 import numpy as np
 import aiohttp
-# from aiocron import crontab
+# from aiocron import crontab  # No longer needed
 from pyppeteer import launch
 from PIL import Image
 import PIL.ImageOps
@@ -211,8 +211,8 @@ def main():
         parser = argparse.ArgumentParser(description='Python EInk MagicMirror')
         parser.add_argument('-d', '--debug', action='store_true', dest='debug',
                             help='Enable debug logs.', default=False)
-        parser.add_argument('-c', '--cron', action='store', dest='cron',
-                            help='Sets a schedule using cron syntax')
+        # parser.add_argument('-c', '--cron', action='store', dest='cron',
+        #                     help='Sets a schedule using cron syntax')  # No longer needed
         parser.add_argument('-r', '--reset', action='store_true', dest='reset',
                             help='Ignore all other settings and just reset the screen.', default=False)
         args = parser.parse_args()
@@ -220,15 +220,8 @@ def main():
         logging.basicConfig(level=level, format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 
         if not args.reset:
-            if args.cron:
-                logging.info(f'Scheduling the refresh using the schedule "{args.cron}".')
-                # crontab(args.cron, func=refresh)
-                # Initially refresh the display before relying on the schedule
-                asyncio.get_event_loop().run_until_complete(refresh())
-                asyncio.get_event_loop().run_forever()
-            else:
-                logging.info('Only running the refresh once.')
-                asyncio.get_event_loop().run_until_complete(refresh())
+            logging.info('Running refresh once.')
+            asyncio.get_event_loop().run_until_complete(refresh())
     except KeyboardInterrupt:
         logging.info('Shutting down after receiving a keyboard interrupt.')
     finally:
