@@ -9,3 +9,5 @@ Group=tkanell
 WorkingDirectory=/home/tkanell/repos/MagicMirrorE-Ink
 ExecStart=/home/tkanell/repos/MagicMirrorE-Ink/run.sh
 Environment=PATH=/home/tkanell/repos/MagicMirrorE-Ink/.venv/bin:/usr/local/bin:/usr/bin:/bin
+TimeoutSec=600
+TimeoutStopSec=30

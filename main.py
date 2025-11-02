@@ -54,14 +54,17 @@ async def create_screenshot(file_path):
     global wait_to_load
     global wait_after_load
     global url
-    logging.debug('Creating screenshot')
+    logging.info('Creating screenshot')
     
     # Check if server is available first
+    logging.info(f'Checking if server is available at {url}')
     if not await check_server_availability():
         raise Exception(f"MagicMirror server is not available at {url}. Please make sure it's running.")
+    logging.info('Server is available')
     
     browser = None
     try:
+        logging.info('Launching browser')
         # Simplified browser launch configuration for low-resource environments
         browser = await launch({
             'headless': True,
@@ -89,47 +92,78 @@ async def create_screenshot(file_path):
             'handleSIGHUP': False,
             'dumpio': True
         })
+        logging.info('Browser launched successfully')
 
+        logging.info('Creating new page')
         page = await browser.newPage()
         
+        logging.info(f'Setting viewport to {display_width}x{display_height}')
         # Set a smaller viewport to reduce memory usage
         await page.setViewport({
             "width": display_width,
             "height": display_height,
             "deviceScaleFactor": 1
         })
+        logging.info('Viewport set')
         
         # Set a shorter timeout for navigation
+        logging.info(f'Navigating to {url} (timeout: {wait_to_load}s)')
         try:
             await page.goto(url, timeout=wait_to_load * 1000, waitUntil='domcontentloaded')
+            logging.info('Page navigation completed')
         except Exception as e:
             logging.error(f"Navigation failed: {str(e)}")
             if browser:
-                await browser.close()
+                try:
+                    await asyncio.wait_for(browser.close(), timeout=5)
+                except (asyncio.TimeoutError, Exception):
+                    try:
+                        browser.process.kill()
+                    except:
+                        pass
             raise Exception(f"Failed to load {url}. Please check if the server is running and accessible.")
         
         # Wait for any remaining network activity to settle
+        logging.info(f'Waiting {wait_after_load}s for page to fully load')
         try:
-            await page.waitFor(wait_after_load * 1000)
+            await asyncio.wait_for(page.waitFor(wait_after_load * 1000), timeout=wait_after_load + 10)
+            logging.info('Wait completed')
+        except asyncio.TimeoutError:
+            logging.warning("Wait after load timed out, proceeding anyway")
         except Exception as e:
             logging.warning(f"Wait after load failed: {str(e)}")
         
         # Take screenshot with increased timeout
+        logging.info(f'Taking screenshot (saving to {file_path})')
         try:
             await page.screenshot({'path': file_path, 'timeout': 30000})  # 30 second timeout for screenshot
+            logging.info('Screenshot saved successfully')
         except Exception as e:
             logging.error(f"Screenshot failed: {str(e)}")
             raise
         
-        await browser.close()
+        # Ensure browser closes with timeout
+        try:
+            await asyncio.wait_for(browser.close(), timeout=5)
+        except asyncio.TimeoutError:
+            logging.warning("Browser close timed out, forcing kill")
+            try:
+                browser.process.kill()
+            except:
+                pass
+        except Exception as e:
+            logging.warning(f"Error closing browser: {str(e)}")
         logging.debug('Finished creating screenshot')
     except Exception as e:
         logging.error(f'Error creating screenshot: {str(e)}')
         if browser:
             try:
-                await browser.close()
-            except:
-                pass
+                await asyncio.wait_for(browser.close(), timeout=5)
+            except (asyncio.TimeoutError, Exception):
+                try:
+                    browser.process.kill()
+                except:
+                    pass
         raise
 
 
@@ -152,14 +186,24 @@ def remove_aliasing_artefacts(image):
 
 
 async def refresh():
+    # Overall timeout for the entire refresh operation (5 minutes)
+    total_timeout = 300
+    try:
+        await asyncio.wait_for(_refresh_internal(), timeout=total_timeout)
+    except asyncio.TimeoutError:
+        logging.error(f"Refresh operation timed out after {total_timeout} seconds")
+        raise
+
+async def _refresh_internal():
     logging.info('Starting refresh.')
-    logging.debug('Initializing / waking screen.')
+    logging.info('Initializing / waking screen.')
     epd = EPD()
     epd.init()
+    logging.info('Screen initialized')
     with tempfile.NamedTemporaryFile(suffix='.png') as tmp_file:
-        logging.debug(f'Created temporary file at {tmp_file.name}.')
+        logging.info(f'Created temporary file at {tmp_file.name}.')
         await create_screenshot(tmp_file.name)
-        logging.debug('Opening screenshot.')
+        logging.info('Opening screenshot.')
         image = Image.open(tmp_file)
         # image = Image.open('screenshot.png')
         
@@ -199,9 +243,10 @@ async def refresh():
         black_image = Image.fromarray(black_data)
         red_image = Image.fromarray(red_data)
         
-        logging.debug('Sending image to screen.')
+        logging.info('Sending image to screen.')
         epd.display(epd.getbuffer(black_image), epd.getbuffer(red_image))
-    logging.debug('Sending display back to sleep.')
+        logging.info('Image sent to display')
+    logging.info('Sending display back to sleep.')
     epd.sleep()
     logging.info('Refresh finished.')
 

@@ -3,7 +3,7 @@ Description=MagicMirror EInk Timer
 Requires=magicmirror-eink.service
 
 [Timer]
-OnCalendar=hourly
+OnCalendar=*:00:00
 Persistent=true
 RandomizedDelaySec=300
 
